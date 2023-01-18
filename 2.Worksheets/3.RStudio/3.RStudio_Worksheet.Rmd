@@ -156,7 +156,7 @@ In the R code chunk below, do the following:
 2) Remove the last row of matrix `m`.
 
 ```{r}
-n <- m[, c(1:10, 3)]
+n <- m[ , c(3)]
 n <- m[c(1:5, 5), ]
 ```
 
