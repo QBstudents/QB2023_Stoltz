@@ -1,6 +1,6 @@
 ---
 title: '8\. Worksheet: Among Site (Beta) Diversity -- Part 2'
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Madison Stoltz; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -42,10 +42,14 @@ In the R code chunk below, provide the code to:
 4. load the `vegan` R package (be sure to install if needed).  
 
 ```{r}
-
-
-
-
+rm(list=ls())
+getwd()
+#setwd("~GitHub/QB2023_Stoltz/2.Worksheets/6.BetaDiversity")
+library(vegan)
+library(viridis)
+library(indicspecies)
+library(gplots)
+library(BiodiversityR)
 ```
 
 ## 2) LOADING DATA
@@ -54,9 +58,10 @@ In the R code chunk below, load the `doubs` dataset from the `ade4` package
 
 ```{r}
 # note, pleae do not print the dataset when submitting
-
-
-
+library(ade4)
+data(doubs)
+fish <- doubs$fish
+fish <- fish[-8, ]
 ```
 ## 3) HYPOTHESIS TESTING
 
@@ -69,22 +74,23 @@ In the code chunk below, test the hypothesis that fish community composition var
 2. use the multivariate analyses for categorical predictors to describe how fish community structure relates to habitat quality.
 
 ```{r}
+quality <- c(rep("HQ", 13), rep("MQ", 5), rep("LQ", 6), rep("MQ", 5))
+adonis(fish ~ quality, method="bray", permutations=999)
 
+indval <- multipatt(fish, cluster = quality, func = "IndVal.g",
+                    control = how(nperm=999))
+summary(indval)
 
-
-
-
-
-
-
-
+fish.rel <- decostand(fish, method ="total")
+phi <- multipatt(fish.rel, cluster = quality, func = "r.g",
+                 control = how(nperm=999))
+summary(phi)
 ```
 
 ***Question 1***: Based on the PERMANOVA, IndVal, and phi coefficient analyses, what did you learn about the relationship between habitat quality and the fish species composition?
 Are the different analyses consistent with one another and do they agree with the visualizations (heat maps, cluster dendograms, ordinations) that you created?
 
-> ***Answer 1***: 
-
+> ***Answer 1***: Based on the analyses, higher habitat quality has a lower amount of species. Specifically, higher habitat quality has some indicator species that can be useful to indicate if a habitat is of high quality or not. The analyses are not exactly the same, but there is some overlap with the indicator species. This could maybe mean variation in different definitions of a "high quality" habitat.
 
 ### B.  Multivariate Procedures for Continuous Designs
 
@@ -95,17 +101,16 @@ In the R code chunk below, do the following:
 2. use a Mantel test to test the hypothesis that fish assemblages are correlated with stream environmental variables.
 
 ```{r}
+fish.dist <- vegdist(doubs$fish[-8, ], method = "bray")
+env.dist <- vegdist(scale(doubs$env[-8,]), method = "euclid")
 
-
-
-
-
+mantel(fish.dist, env.dist)
 ```
 
 ***Question 2***: What do the results from our Mantel test suggest about fish diversity and stream environmental conditions? 
 How does this relate to your hypothesis about stream quality influencing fish communities?
 
-> ***Answer 2***:  
+> ***Answer 2***:  With an r value of 0.604 and a significance of 0.001, I can determine that there is a high correlation between fish diveristy and stream environmental conditions. 
 
 ### ii.  Constrained Ordination
 In the R code chunk below, do the following:  
@@ -118,20 +123,23 @@ In the R code chunk below, do the following:
 6. plot the constrained ordination results including labeled points for each site, and
 7. add vectors that demonstrate the influence of each environmental factor the constrained ordination.   
 ```{r}
+#page 14
+fish.db <- vegdist(fish, method="bray")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+env.chem <- as.matrix(doubs$env[-8 , 5:11])
+doubs.dbrda <- dbrda(fish.db ~ ., as.data.frame(env.chem))
+ordiplot(doubs.dbrda)
+#page 15
+doubs.dbrda.mod0 <- dbrda(fish.db ~ 1, as.data.frame(env.chem))
+ordiplot(doubs.dbrda.mod0)
+doubs.dbrda.mod1 <- dbrda(fish.db ~ ., as.data.frame(env.chem))
+doubs.dbrda <- ordiR2step(doubs.dbrda.mod0, doubs.dbrda.mod1, perm.max = 200)
+doubs.dbrda$call
+doubs.dbrda$anova
+ordiplot(doubs.dbrda)
+permutest(doubs.dbrda, permutations = 999)
+envfit(doubs.dbrda, env.chem[,c(4,6,7)], perm= 999)
+#Page 16
 
 
 
