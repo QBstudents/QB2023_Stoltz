@@ -307,6 +307,9 @@ Describe any interesting patterns and identify a hypothesis is relevant to the p
 ```{r}
 library(readr)
 Data_DRYAD_Seabirds <- read_csv("~/Desktop/Data_DRYAD_Seabirds.csv")
+
+
+
 ```
 
 > Synthesis Answer: I am having a difficult time trying to run one of the tools on my data. I contacted my partner but they have not responded. I think an issue may stem from needing to change the data in a way that r can read it better. I plan to ask about this issue on Friday before class.
