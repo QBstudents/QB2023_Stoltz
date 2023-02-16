@@ -319,12 +319,14 @@ Interpret the findings of your data with respect to principles of biodiversity.
 ```{r}
 #QB_Seabird_Data <- read_csv("~/Desktop/Research/QB Seabird Data.csv")
 #Make matrices for species and env factors
-#dataspecies <- QB_Seabird_Data[ ,2:5]
-#View(dataspecies)
-#dataenvironment <- QB_Seabird_Data[ ,14:17]
-#View(dataenvironment)
 
-#mantel(dataspecies,dataenvironment)
+databirdspecies <- QB_Seabird_Data[-c(37,59,75,76,78,79,82,83,112,121,135,165,172,177,190,198,259,280,307,309,311,312), 2:5]
+View(databirdspecies)
+
+dataenv <- QB_Seabird_Data[-c(37,59,75,76,78,79,82,83,112,121,135,165,172,177,190,198,259,280,307,309,311,312), 14:17]
+View(dataenv)
+
+mantel(databirdspecies,dataenv)
 ```
 
 > Synthesis Answer: I ran the above code but it did not work. I plan to ask about this in class on Friday. I attached below my warning message. 
