@@ -1,6 +1,6 @@
 ---
 title: '7\. Worksheet: Diversity Synthesis'
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Madison Stoltz; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -72,6 +72,35 @@ In smaller groups, take 15 minutes to brainstorm questions, code, statistical te
 **Answer 1:** Use the space below to generate a rarefaction curve/sample coverage based on the data we collected in class for each community. Make sure to annotate your code using # symbols so others (including instructors) understand what you have done and why you have done it. 
 
 ```{r}
+#load packages
+library(readr)
+setwd("~/Desktop/Research")
+QB_Data_Wrangling_Lab_SP23_Sheet1 <- read_csv("QB Data Wrangling Lab SP23 - Sheet1.csv")
+View(QB_Data_Wrangling_Lab_SP23_Sheet1)
+library(vegan)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(broom)
+
+#Observed richness
+S.obs <- function(x = ""){
+  rowSums(x>0)*1
+}
+
+#Look at B community
+Bcommunityspecies <- QB_Data_Wrangling_Lab_SP23_Sheet1[5:8, 3:32]
+as.matrix(Bcommunityspecies)
+str(Bcommunityspecies)
+Bcommunityspecies [1:30] = lapply(Bcommunityspecies[1:30], FUN= function(y){as.numeric(y)})
+
+#generate a rarefaction curve/sample coverage
+rf <- S.obs(Bcommunityspecies)
+min.N <- min(rowSums(Bcommunityspecies))
+S.rarefy <- rarefy(x = Bcommunityspecies, sample = min.N, se = TRUE)
+rarecurve(x = Bcommunityspecies, step = 20, col = "blue", cex = 0.6, las = 1)
+abline(0, 1, col = 'red')
+text(1500, 1500, "1:1", pos = 2, col = 'red')
 ```
 
 
@@ -84,15 +113,68 @@ What is the variation among the samples in your group and between the communitie
 **Answer 2a - Analysis:** Use the space below for code that is being used to analyze your data and test your hypotheses on your chosen alpha diversity tool. Make sure to annotate your code using # symbols so others (including instructors) understand what you have done and why you have done it.
 
 ```{r}
+#Simpson's Evenness
+SimpE <- function(x= ""){
+  S <- S.obs(x)
+  x = as.data.frame(x)
+  D <- diversity(x, "inv")
+  E <- (D)/S
+  return(E)
+  }
+
+SimpE(Bcommunityspecies)
+
+#Shannon's Diversity
+ShanH <- function(x=""){
+  H = 0
+  for (n_i in x){
+    if (n_i > 0) {
+      p = n_i / sum(x)
+      H = H - p*log(p)
+    }
+  }
+  return(H)
+}
+
+diversity(Bcommunityspecies, index= "shannon")
 ```
 
 **Answer 2b - Plot:** With your analysis, create one (and only one, although it can have multiple panels) *publication-quality* figure.
 
 ```{r}
+#RAC function
+RAC <- function(x= ""){
+  x.ab = x[x>0]
+  x.ab.ranked = x.ab[order(x.ab, decreasing = TRUE)]
+  as.data.frame(lapply(x.ab.ranked, unlist))
+  return(x.ab.ranked)
+}
+
+#plot RAC
+plot.new()
+
+Bcommunityspecies <- QB_Data_Wrangling_Lab_SP23_Sheet1[5:8, 3:32]
+as.matrix(Bcommunityspecies)
+str(Bcommunityspecies)
+Bcommunityspecies [1:30] = lapply(Bcommunityspecies[1:30], FUN= function(y){as.numeric(y)})
+
+rac <- RAC(x = Bcommunityspecies)
+ranks <- as.vector(seq(1, length(rac)))
+opar <- par(no.readonly=TRUE)
+par(mar = c(5.1, 5.1, 4.1, 2.1))
+plot(ranks, log(rac), type='p', axes=F,
+     xlab = "Rank in Abundance", ylab = "Abundance",
+     las =1, cex.lab = 1.4, cex.axis = 1.25)
+
+box()
+axis(side=1, labels=T, cex.axis=1.25)
+axis(side=2, las=1, cex.axis=1.25,
+     labels = c(1, 2, 5, 10, 20), at = log(c(1,2,5,10,20)))
 ```
 
 **Answer 2c - Interpret results:** Write an informative yet succinct (~5 sentences) caption that creates a "stand-alone" figure. Take a peek at figures and figure captions in a paper published in your favorite journal for inspiration.
 
+>Answer: Figure 1. The rank in abundance against species abundance. The rank of abundance depicts the ranking of species from the most to least abundant. The species abundance is the measure of prevelance of a species. Here, the rank in abundance increases as the abundance decreases. Contrastingly, the rank in abunace decreases as the abundance increases. Rank in abundance and species abundance present an inverse relationship. 
 
 ### 3) Beta diversity
 
@@ -103,18 +185,62 @@ Can you detect compositional differences between each source community sampled?
 **Answer 3a - Analysis:** Use the space below for code that is being used to analyze your data and test your hypotheses on your chosen beta diversity tool. Make sure to annotate your code using # symbols so others (including instructors) understand what you have done and why you have done it.
 
 ```{r}
+#Bray-Curtis
+Bcommunityspecies <- QB_Data_Wrangling_Lab_SP23_Sheet1[5:8, 3:32]
+as.matrix(Bcommunityspecies)
+str(Bcommunityspecies)
+Bcommunityspecies [1:30] = lapply(Bcommunityspecies[1:30], FUN= function(y){as.numeric(y)})
+
+speciesbc <- vegdist(Bcommunityspecies, method="bray")
 ```
 
 **Answer 3b - Plot:** With your analysis, create one (and only one, although it can have multiple panels) *publication-quality* figure.  
 
 ```{r}
+#PCoA
+library(viridis)
+library(lattice)
+
+order <- rev(attr(Bcommunityspecies, "Labels"))
+
+speciesbc <- as.matrix(speciesbc)
+
+gummy.pcoa <- cmdscale(speciesbc, eig = TRUE, k = 3)
+# Quantify percent variation explained by the first three axes
+explainvar1 <- round(gummy.pcoa$eig[1] / sum(gummy.pcoa$eig), 3) * 100
+explainvar2<- round(gummy.pcoa$eig[2] / sum(gummy.pcoa$eig), 3) * 100
+explainvar3 <- round(gummy.pcoa$eig[3] / sum(gummy.pcoa$eig), 3) * 100
+sum.eig <- sum(explainvar1, explainvar2, explainvar3)
+
+# Define plot parameters
+par(mar =  c(5.1, 4.1, 4.1, 2.1) + 0.1)
+
+# Initiate plot 
+plot(gummy.pcoa$points[ ,1], gummy.pcoa$points[ ,2], ylim = c(-0.3, 0.7), 
+     xlab = paste("PCoA 1 (", explainvar1, "%)", sep = ""),
+     ylab = paste("PCoA 2 (", explainvar2, "%)", sep = ""),
+     pch = 16, cex = 2.0, type = "n", cex.lab = 1.5,
+     cex.axis = 1.2, axes = FALSE)
+
+# Add axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+
+# Add points and labels 
+points(gummy.pcoa$points[ ,1], gummy.pcoa$points[ ,2],
+       pch = 19, cex = 2, bg = "gray", col = "gray")
+text(gummy.pcoa$points[ ,1], gummy.pcoa$points[ ,2],
+     labels = row.names(gummy.pcoa$points))
 ```
 
 **Answer 3c - Interpret results:** Write an informative yet succinct (~5 sentences) caption that creates a "stand-alone" figure. Take a peek at figures and figure captions in a paper published in your favorite journal for inspiration.
 
+>Answer: Figure 2. PCoA basic ordination plot of species within community B. PCoA presents variation among the 4 species. PCoA 1 accounts for 48% of the variation amongst species. PCoA 2 accounts for 39.8% of the variation amongst species. The species are clearly diverged on both PCoA 1 and PCoA 2.
 
 ## SUBMITTING YOUR ASSIGNMENT
 Use Knitr to create a PDF of your completed 7.DiversitySynthesis_Worksheet.Rmd document, push it to GitHub, and create a pull request.
 Please make sure your updated repo includes both the pdf and RMarkdown files.
 
-Unless otherwise noted, this assignment is due on **Wednesday, February 15^th^, 2023 at 12:00 PM (noon)**.
+Unless otherwise noted, this assignment is due on **Wednesday, February 15^th, 2023 at 12:00 PM (noon)**.
